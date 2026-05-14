@@ -21,6 +21,11 @@
    pip install -r requirements.txt
    ```
 
+4. บันทึก dependencies ใหม่ (ถ้ามีการติดตั้งเพิ่ม):
+   ```
+   pip freeze > requirements.txt
+   ```
+
 ## การใช้งาน
 
 รันโปรแกรมหลัก:

@@ -161,35 +161,106 @@ def load_default_config(cam, config_file=DEFAULT_CONFIG_FILE):
             
             print(f"[*] พบ {len(params)} parameters")
             
-            # Apply ค่าที่สำคัญ
+            # Apply ทุกพารามีเตอร์ที่ parse ได้
             applied_count = 0
-            important_params = ['Width', 'Height', 'PixelFormat', 'ExposureTime', 'Gain', 
-                              'OffsetX', 'OffsetY', 'AcquisitionFrameRate', 'BalanceWhiteAuto']
+            failed_count = 0
+            skipped_params = ['RegionSelector', 'DeviceLinkSelector', 'StreamSelector', 
+                            'TimerDuration', 'TimerDelay', 'CounterResetSource',
+                            'LUTSelector', 'LUTValue', 'ChunkSelector', 'LineSelector',
+                            'UserOutputSelector', 'EventSelector', 'AAROIWidth', 'AAROIHeight',
+                            'AAROIOffsetX', 'AAROIOffsetY', 'AWBROIWidth', 'AWBROIHeight',
+                            'AWBROIOffsetX', 'AWBROIOffsetY', 'AutoExposureTimeMin', 'AutoExposureTimeMax',
+                            'AutoGainMin', 'AutoGainMax', 'ExpectedGrayValue', 'BlackLevelSelector',
+                            'GainSelector', 'BalanceRatioSelector', 'RemoveParameterLimit']
             
-            for param_name in important_params:
-                if param_name in params:
-                    try:
-                        value = params[param_name]
-                        if hasattr(cam, param_name):
-                            if param_name == 'PixelFormat':
-                                cam.PixelFormat.set(value)
-                            elif param_name in ['Width', 'Height', 'OffsetX', 'OffsetY']:
-                                cam[param_name].set(int(value))
-                            elif param_name == 'ExposureTime':
-                                cam.ExposureTime.set(int(value))
-                            elif param_name == 'Gain':
-                                cam.Gain.set(float(value))
-                            elif param_name == 'AcquisitionFrameRate':
-                                cam.AcquisitionFrameRate.set(float(value))
-                            elif param_name == 'BalanceWhiteAuto':
-                                if value == 'On':
-                                    cam.BalanceWhiteAuto.set(gx.GxAutoEntry.ONCE)
+            for param_name, value in params.items():
+                # ข้ามพารามีเตอร์ที่ไม่ต้องการ
+                if param_name in skipped_params:
+                    continue
+                    
+                try:
+                    if not hasattr(cam, param_name):
+                        continue
+                    
+                    # กำหนด type ของค่าตามพารามีเตอร์
+                    if param_name in ['PixelFormat', 'AcquisitionMode', 'TriggerMode', 
+                                     'TriggerSource', 'TriggerActivation', 'ExposureMode',
+                                     'ExposureAuto', 'GainAuto', 'AWBLampHouse', 'GammaMode',
+                                     'BlackLevelSelector', 'TestPattern', 'BinningSelector',
+                                     'BinningHorizontalMode', 'BinningVerticalMode',
+                                     'ReverseX', 'ReverseY', 'LineMode', 'LineSource',
+                                     'UserOutputValue', 'TimerTriggerSource', 'BalanceWhiteAuto',
+                                     'SaturationMode', 'ColorTransformationEnable', 
+                                     'ColorTransformationMode', 'LightSourcePreset',
+                                     'UserSetDefault', 'SensorShutterMode', 'RegionMode',
+                                     'DecimationHorizontal', 'DecimationVertical',
+                                     'StreamBufferHandlingMode', 'AcquisitionFrameRateMode',
+                                     'DeviceLinkThroughputLimitMode', 'ChunkModeActive',
+                                     'LUTEnable', 'AWBROIOffsetX', 'AWBROIOffsetY']:
+                        # String values
+                        cam[param_name].set(value)
+                        applied_count += 1
+                        print(f"   - {param_name}: {value}")
+                        
+                    elif param_name in ['Width', 'Height', 'OffsetX', 'OffsetY',
+                                        'ExposureTime', 'TriggerDelay', 'TriggerFilterRaisingEdge',
+                                        'TriggerFilterFallingEdge', 'BlackLevel', 'DigitalShift',
+                                        'AcquisitionBurstFrameCount', 'BinningHorizontal', 
+                                        'BinningVertical', 'LineInverter', 'UserOutputValue',
+                                        'TimerDuration', 'TimerDelay', 'Saturation']:
+                        # Integer values
+                        cam[param_name].set(int(value))
+                        applied_count += 1
+                        print(f"   - {param_name}: {value}")
+                        
+                    elif param_name in ['Gain', 'AcquisitionFrameRate', 'BalanceRatio']:
+                        # Float values
+                        cam[param_name].set(float(value))
+                        applied_count += 1
+                        print(f"   - {param_name}: {value}")
+                        
+                    elif param_name in ['BalanceWhiteAuto']:
+                        # Auto entry (On/Off/Once)
+                        if value.lower() == 'on':
+                            cam[param_name].set(gx.GxAutoEntry.ON)
+                        elif value.lower() == 'off':
+                            cam[param_name].set(gx.GxAutoEntry.OFF)
+                        elif value.lower() == 'once':
+                            cam[param_name].set(gx.GxAutoEntry.ONCE)
+                        applied_count += 1
+                        print(f"   - {param_name}: {value}")
+                        
+                    elif param_name in ['ColorTransformationEnable', 'GammaEnable']:
+                        # Boolean values
+                        cam[param_name].set(value.lower() == 'true' or value.lower() == '1')
+                        applied_count += 1
+                        print(f"   - {param_name}: {value}")
+                        
+                    else:
+                        # ลองเป็น int ก่อน
+                        try:
+                            cam[param_name].set(int(value))
                             applied_count += 1
                             print(f"   - {param_name}: {value}")
-                    except Exception as e:
-                        pass
+                        except:
+                            # ลองเป็น float
+                            try:
+                                cam[param_name].set(float(value))
+                                applied_count += 1
+                                print(f"   - {param_name}: {value}")
+                            except:
+                                # ลองเป็น string
+                                try:
+                                    cam[param_name].set(value)
+                                    applied_count += 1
+                                    print(f"   - {param_name}: {value}")
+                                except:
+                                    failed_count += 1
+                                    
+                except Exception as e:
+                    failed_count += 1
             
-            print(f"[*] โหลดการตั้งค่าพื้นฐาน: {applied_count} ค่า")
+            print(f"[*] โหลดการตั้งค่าพื้นฐาน: {applied_count} ค่า (ล้มเหลว: {failed_count} ค่า)")
             
         except Exception as e:
             print(f"[!] ไม่สามารถโหลด config: {e}")

@@ -157,7 +157,7 @@ EventSelector	FrameBurstStartOvertrigger
 EventNotification	Off
 EventSelector	ExposureEnd
 GainSelector	AnalogAll
-Gain	11
+Gain	15
 GainSelector	AnalogAll
 GainSelector	AnalogAll
 GainAuto	Off
